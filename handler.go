@@ -26,7 +26,7 @@ func (a *App) HandleMessage(msg *tgbotapi.Message) {
 	case cmd == "/help":
 		a.SendText(state.UserID, HelpMessage)
 
-	case cmd == "/start" || cmd == "" && state.Action == ActNewToken:
+	case cmd == "/start":
 		if !state.IsAuthorized() {
 			for _, m := range HelloMessages {
 				a.SendText(state.UserID, m)
