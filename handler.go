@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -10,9 +12,18 @@ import (
 	"gopkg.in/telegram-bot-api.v1"
 )
 
+var reCmdRE = regexp.MustCompile(`/re_([a-f0-9]{4,})`)
+
 func (a *App) HandleMessage(msg *tgbotapi.Message) {
 	state := a.LoadState(msg.From.ID)
 	a.ResetState(state) // по умолчанию сбрасываем состояние
+
+	replyToShortCode := ""
+	if msg.ReplyToMessage != nil {
+		if m := reCmdRE.FindAllStringSubmatch(msg.ReplyToMessage.Text, -1); m != nil {
+			replyToShortCode = m[len(m)-1][1]
+		}
+	}
 
 	switch cmd := msg.Command(); {
 
@@ -114,7 +125,7 @@ func (a *App) HandleMessage(msg *tgbotapi.Message) {
 			m := tgbotapi.NewMessage(state.UserID,
 				"Сообщение отправлено!\n"+
 					strings.Repeat("\u2500", 10)+"\n"+
-					"Ответить: /re_"+shortCode+"\n"+
+					"Ответить: /re_"+shortCode+" (или ответить на это сообщение)\n"+
 					"Открыть: https://"+a.apiHost+"/"+state.User.Name+"/"+postID+"\n",
 			)
 			m.DisableWebPagePreview = true
@@ -151,9 +162,35 @@ func (a *App) HandleMessage(msg *tgbotapi.Message) {
 		} else {
 			a.SendText(state.UserID, "Комментарий отправлен!\n"+
 				strings.Repeat("\u2500", 10)+"\n"+
-				"Ответить: /re_"+state.PostID[:4]+"\n"+
+				"Ответить: /re_"+state.PostID[:4]+" (или ответить на это сообщение)\n"+
 				"Открыть: https://"+a.apiHost+"/"+state.PostAuthor+"/"+state.PostID+"\n",
 			)
+		}
+
+	case cmd == "" && replyToShortCode != "" && state.IsAuthorized():
+		post, err := a.getPost(state.User, replyToShortCode)
+		if err == ErrNotFound {
+			a.SendText(state.UserID, "Сообщение не найдено.")
+		} else if err != nil {
+			a.SendText(state.UserID, "Что-то пошло не так: "+err.Error())
+		} else {
+			if msg.Text == "" {
+				a.SendText(state.UserID, "Извините, комментарий может быть только текстовым. Попробуйте ещё раз?")
+				break
+			}
+			req := new(frf.NewCommentRequest)
+			req.Comment.Body = msg.Text
+			req.Comment.PostID = post.ID
+			err := state.User.SendRequest("POST", "https://"+a.apiHost+"/v1/comments", req, nil)
+			if err != nil {
+				a.SendText(state.UserID, "Что-то пошло не так: "+err.Error())
+			} else {
+				a.SendText(state.UserID, "Комментарий отправлен!\n"+
+					strings.Repeat("\u2500", 10)+"\n"+
+					"Ответить: /re_"+post.ID[:4]+" (или ответить на это сообщение)\n"+
+					"Открыть: https://"+a.apiHost+"/"+post.Author+"/"+post.ID+"\n",
+				)
+			}
 		}
 
 	case cmd == "/list" && state.IsAuthorized():
@@ -170,19 +207,19 @@ func (a *App) HandleMessage(msg *tgbotapi.Message) {
 			if len(posts) > cnt {
 				posts = posts[:cnt]
 			}
-			a.SendText(state.UserID, "Ваши директ-сообщения:")
+			a.SendText(state.UserID, fmt.Sprintf("Ваши директ-сообщения (%d):", len(posts)))
 			for i := range posts {
 				p := posts[len(posts)-i-1]
 				a.SendText(state.UserID,
-					"✉ "+humanName(p.Author, state.User.Name, "вы")+" \u2192 "+humanList(p.Addressees, state.User.Name, "вам")+":\n"+
+					fmt.Sprintf("%d/%d", i+1, len(posts))+
+						" ✉ "+humanName(p.Author, state.User.Name, "вы")+" \u2192 "+humanList(p.Addressees, state.User.Name, "вам")+":\n"+
 						strings.Repeat("\u2500", 10)+"\n"+
 						p.Body+"\n"+
 						strings.Repeat("\u2500", 10)+"\n"+
-						"Ответить: /re_"+p.ID[:4]+"\n"+
+						"Ответить: /re_"+p.ID[:4]+" (или ответить на это сообщение)\n"+
 						"Открыть: https://"+a.apiHost+"/"+p.Author+"/"+p.ID+"\n",
 				)
 			}
-			a.SendText(state.UserID, "Конец списка сообщений.")
 		}
 
 	default:
