@@ -56,7 +56,7 @@ func (a *App) HandleRT(userID int, event string, jmsg json.RawMessage) {
 			strings.Repeat("\u2500", 10)+"\n"+
 			v.Comment.Body+"\n"+
 			strings.Repeat("\u2500", 10)+"\n"+
-			"Ответить: /re_"+post.ID[:4]+"\n"+
+			"Ответить: /re_"+post.ID[:4]+" или ответить (Reply) на это сообщение\n"+
 			"Открыть: https://"+a.apiHost+"/"+post.Author+"/"+post.ID+"\n",
 		)
 	
@@ -78,7 +78,7 @@ func (a *App) HandleRT(userID int, event string, jmsg json.RawMessage) {
 			strings.Repeat("\u2500", 10)+"\n"+
 			post.Body+"\n"+
 			strings.Repeat("\u2500", 10)+"\n"+
-			"Ответить: /re_"+post.ID[:4]+"\n"+
+			"Ответить: /re_"+post.ID[:4]+" или ответить (Reply) на это сообщение\n"+
 			"Открыть: https://"+a.apiHost+"/"+post.Author+"/"+post.ID+"\n",
 		)
 	}

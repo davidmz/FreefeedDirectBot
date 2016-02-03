@@ -125,7 +125,7 @@ func (a *App) HandleMessage(msg *tgbotapi.Message) {
 			m := tgbotapi.NewMessage(state.UserID,
 				"Сообщение отправлено!\n"+
 					strings.Repeat("\u2500", 10)+"\n"+
-					"Ответить: /re_"+shortCode+" (или ответить на это сообщение)\n"+
+					"Ответить: /re_"+shortCode+" или ответить (Reply) на это сообщение\n"+
 					"Открыть: https://"+a.apiHost+"/"+state.User.Name+"/"+postID+"\n",
 			)
 			m.DisableWebPagePreview = true
@@ -162,7 +162,7 @@ func (a *App) HandleMessage(msg *tgbotapi.Message) {
 		} else {
 			a.SendText(state.UserID, "Комментарий отправлен!\n"+
 				strings.Repeat("\u2500", 10)+"\n"+
-				"Ответить: /re_"+state.PostID[:4]+" (или ответить на это сообщение)\n"+
+				"Ответить: /re_"+state.PostID[:4]+" или ответить (Reply) на это сообщение\n"+
 				"Открыть: https://"+a.apiHost+"/"+state.PostAuthor+"/"+state.PostID+"\n",
 			)
 		}
@@ -187,7 +187,7 @@ func (a *App) HandleMessage(msg *tgbotapi.Message) {
 			} else {
 				a.SendText(state.UserID, "Комментарий отправлен!\n"+
 					strings.Repeat("\u2500", 10)+"\n"+
-					"Ответить: /re_"+post.ID[:4]+" (или ответить на это сообщение)\n"+
+					"Ответить: /re_"+post.ID[:4]+" или ответить (Reply) на это сообщение\n"+
 					"Открыть: https://"+a.apiHost+"/"+post.Author+"/"+post.ID+"\n",
 				)
 			}
@@ -216,7 +216,7 @@ func (a *App) HandleMessage(msg *tgbotapi.Message) {
 						strings.Repeat("\u2500", 10)+"\n"+
 						p.Body+"\n"+
 						strings.Repeat("\u2500", 10)+"\n"+
-						"Ответить: /re_"+p.ID[:4]+" (или ответить на это сообщение)\n"+
+						"Ответить: /re_"+p.ID[:4]+" или ответить (Reply) на это сообщение\n"+
 						"Открыть: https://"+a.apiHost+"/"+p.Author+"/"+p.ID+"\n",
 				)
 			}
