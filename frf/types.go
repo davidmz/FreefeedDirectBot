@@ -2,6 +2,7 @@ package frf
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"regexp"
 	"strings"
@@ -20,6 +21,10 @@ type PostResponseStaff struct {
 		ID   string `json:"id"`
 		Name string `json:"username"`
 	} `json:"subscribers"`
+	Users2 []struct {
+		ID   string `json:"id"`
+		Name string `json:"username"`
+	} `json:"users"`
 	Feeds []struct {
 		ID     string `json:"id"`
 		Type   string `json:"name"`
@@ -117,14 +122,19 @@ type RTNewComment struct {
 
 /////////////////////
 
-func (f *PostResponseStaff) UserNameByID(userID string) (name string) {
+func (f *PostResponseStaff) UserNameByID(userID string) string {
 	for _, u := range f.Users {
 		if u.ID == userID {
-			name = u.Name
-			break
+			return u.Name
 		}
 	}
-	return
+	for _, u := range f.Users2 {
+		if u.ID == userID {
+			return u.Name
+		}
+	}
+	log.Println("Can not find username by id", userID)
+	return "" // не должно быть
 }
 
 func (f *PostResponseStaff) UserNameByFeedID(feedID string) (name, typ string) {

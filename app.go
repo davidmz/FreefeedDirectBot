@@ -40,6 +40,15 @@ func (a *App) testToken(token string) (*frf.User, error) {
 		}
 	}
 
+	if user.Name == "" {
+		for _, u := range v.Users2 {
+			if u.ID == v.Timelines.UserID {
+				user.Name = u.Name
+				break
+			}
+		}
+	}
+
 	return user, nil
 }
 
