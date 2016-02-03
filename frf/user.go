@@ -3,6 +3,7 @@ package frf
 import (
 	"encoding/json"
 	"io"
+	"log"
 	"net/http"
 )
 
@@ -36,7 +37,9 @@ func (u *User) SendRequest(method string, url string, reqObj interface{}, respOb
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return ReadErrorResponse(resp)
+		err := ReadErrorResponse(resp)
+		log.Println("Error:", err, "while send", method, "request to", url)
+		return err
 	}
 
 	if respObj != nil {
