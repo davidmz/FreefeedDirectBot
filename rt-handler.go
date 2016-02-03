@@ -9,23 +9,17 @@ import (
 )
 
 func (a *App) HandleRT(userID int, event string, jmsg json.RawMessage) {
+	state := a.LoadState(userID)
+	if !state.IsAuthorized() {
+		// нет авторизованного юзера
+		log.Println("Cannot find state", userID)
+		return
+	}
+
 	if event == `"comment:new"` {
 		v := new(frf.RTNewComment)
 		if err := json.Unmarshal(jmsg, v); err != nil {
 			log.Println("Can not decode:", string(jmsg[:20]))
-			return
-		}
-
-		if _, err := a.cache.Get("comm:" + v.Comment.ID); err == nil {
-			// дубль
-			return
-		}
-		a.cache.Set("comm:"+v.Comment.ID, struct{}{})
-
-		state := a.LoadState(userID)
-		if !state.IsAuthorized() {
-			// нет авторизованного юзера
-			log.Println("Cannot find state", userID)
 			return
 		}
 
@@ -42,6 +36,14 @@ func (a *App) HandleRT(userID int, event string, jmsg json.RawMessage) {
 			// комментарий от нас
 			return
 		}
+
+		cacheKey := "comm:" + state.User.Name + ":" + v.Comment.ID
+		if _, err := a.cache.Get(cacheKey); err == nil {
+			// дубль для данного слуштеля
+			log.Println("Duplicate comment for ", state.User.Name, v.Comment.ID)
+			return
+		}
+		a.cache.Set(cacheKey, struct{}{})
 
 		post, err := a.getPostByID(state.User, v.Comment.PostID)
 		if err != nil {
@@ -62,13 +64,6 @@ func (a *App) HandleRT(userID int, event string, jmsg json.RawMessage) {
 		v := new(frf.OnePostResponse)
 		if err := json.Unmarshal(jmsg, v); err != nil {
 			log.Println("Can not decode:", string(jmsg[:20]))
-			return
-		}
-
-		state := a.LoadState(userID)
-		if !state.IsAuthorized() {
-			// нет авторизованного юзера
-			log.Println("Cannot find state", userID)
 			return
 		}
 
