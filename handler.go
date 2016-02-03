@@ -44,8 +44,10 @@ func (a *App) HandleMessage(msg *tgbotapi.Message) {
 		a.SendText(state.UserID, "Спасибо, проверяю ваш токен…")
 		u, err := a.testToken(msg.Text)
 		if er, ok := err.(*frf.ErrorResponse); ok && er.HTTPStatusCode == http.StatusUnauthorized {
+			a.SaveState(state)
 			a.SendText(state.UserID, "Похоже, вы указали неправильный токен. Попробуйте ещё раз?")
 		} else if err != nil {
+			a.SaveState(state)
 			a.SendText(state.UserID, "Что-то пошло не так: "+err.Error()+"\nПопробуйте ещё раз?")
 		} else {
 			state.User = u

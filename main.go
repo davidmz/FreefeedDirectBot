@@ -1,20 +1,14 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"flag"
-	"fmt"
 	"log"
-	"net/http"
-	"net/url"
 	"time"
 
 	"github.com/bluele/gcache"
 	"github.com/boltdb/bolt"
-	"github.com/davidmz/FreefeedDirectBot/frf"
 	"github.com/davidmz/mustbe"
-	"github.com/gorilla/websocket"
 	"gopkg.in/telegram-bot-api.v1"
 )
 
@@ -83,4 +77,3 @@ func main() {
 		}
 	}
 }
-
