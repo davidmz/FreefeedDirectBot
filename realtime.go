@@ -66,29 +66,41 @@ func NewRealtime(a *App, s *State) *Realtime {
 
 func (r *Realtime) run() {
 	var (
-		conn     *websocket.Conn
-		isClosed = false
-		err      error
+		conn *websocket.Conn
+		err  error
 	)
 	go func() {
 		<-r.closeCh
 		conn.Close()
-		isClosed = true
 	}()
-	for !isClosed {
+loop:
+	for {
+
+		select {
+		case <-r.closeCh:
+			break loop
+		default:
+		}
+
 		conn, _, err = websocket.DefaultDialer.Dial(
 			"wss://"+r.App.apiHost+"/socket.io/?token="+url.QueryEscape(r.User.AccessToken)+"&EIO=3&transport=websocket",
 			nil,
 		)
 		if err != nil {
-			log.Fatal("Can not connect to websocket:", err)
-			time.Sleep(3 * time.Second)
+			log.Println("Can not connect to websocket:", err)
+			time.Sleep(10 * time.Second)
 			continue
 		}
 
 		conn.WriteMessage(websocket.TextMessage, []byte(`42["subscribe",{"timeline":["`+r.User.DirectFeed+`"]}]`))
 
-		for !isClosed {
+		for {
+			select {
+			case <-r.closeCh:
+				break loop
+			default:
+			}
+
 			_, p, err := conn.ReadMessage()
 			if err != nil {
 				log.Print("Error: ", err)
