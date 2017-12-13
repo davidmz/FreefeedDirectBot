@@ -27,7 +27,7 @@ func (a *App) testToken(token string) (*frf.User, error) {
 	user := &frf.User{AccessToken: strings.TrimSpace(token)}
 
 	v := new(frf.DirectChannelResponse)
-	err := user.SendRequest("GET", "https://"+a.apiHost+"/v1/timelines/filter/directs?offset=0", nil, v)
+	err := user.SendRequest("GET", "https://"+a.apiHost+"/v2/timelines/filter/directs?offset=0", nil, v)
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +119,7 @@ func (a *App) getContacts(user *frf.User) ([]string, error) {
 
 func (a *App) getAllPosts(user *frf.User) ([]*frf.Post, error) {
 	v := &frf.DirectChannelResponse{}
-	err := user.SendRequest("GET", "https://"+a.apiHost+"/v1/timelines/filter/directs?offset=0", nil, v)
+	err := user.SendRequest("GET", "https://"+a.apiHost+"/v2/timelines/filter/directs?offset=0", nil, v)
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +143,7 @@ func (a *App) getPost(user *frf.User, shortCode string) (*frf.Post, error) {
 
 func (a *App) getPostByID(user *frf.User, postID string) (*frf.Post, error) {
 	v := &frf.OnePostResponse{}
-	err := user.SendRequest("GET", "https://"+a.apiHost+"/v1/posts/"+postID, nil, v)
+	err := user.SendRequest("GET", "https://"+a.apiHost+"/v2/posts/"+postID, nil, v)
 	if err != nil {
 		return nil, err
 	}
