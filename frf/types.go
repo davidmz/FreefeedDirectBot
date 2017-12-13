@@ -100,13 +100,6 @@ type PostResponse struct {
 	} `json:"posts"`
 }
 
-type SubscrResponse struct {
-	Subscr []struct {
-		UserName   string `json:"username"`
-		ScreenName string `json:"screenName"`
-	} `json:"subscribers"`
-}
-
 type RTNewComment struct {
 	Comment struct {
 		ID     string `json:"id"`
@@ -118,6 +111,19 @@ type RTNewComment struct {
 		ID   string `json:"id"`
 		Name string `json:"username"`
 	} `json:"users"`
+}
+
+type WhoAmIResponse struct {
+	User struct {
+		Subscribers []struct {
+			ID       string `json:"id"`
+			UserName string `json:"username"`
+		} `json:"subscribers"`
+	} `json:"users"`
+	Subscriptions []struct {
+		Name   string `json:"name"`
+		UserID string `json:"user"`
+	}
 }
 
 /////////////////////

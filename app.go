@@ -73,45 +73,22 @@ type contactTask struct {
 }
 
 func (a *App) getContacts(user *frf.User) ([]string, error) {
-	tasks := [](*contactTask){
-		{Url: "https://" + a.apiHost + "/v1/users/" + user.Name + "/subscribers"},
-		{Url: "https://" + a.apiHost + "/v1/users/" + user.Name + "/subscriptions"},
+	v := &frf.WhoAmIResponse{}
+	err := user.SendRequest("GET", "https://freefeed.net/v2/users/whoami", nil, v)
+	if err != nil {
+		return nil, err
 	}
-	wg := new(sync.WaitGroup)
-	wg.Add(len(tasks))
-	for _, task := range tasks {
-		go func(task *contactTask) {
-			defer wg.Done()
-
-			v := &frf.SubscrResponse{}
-			err := user.SendRequest("GET", task.Url, nil, v)
-			if err != nil {
-				task.Err = err
-				return
-			}
-
-			task.List = make([]string, len(v.Subscr))
-			for i, u := range v.Subscr {
-				task.List[i] = u.UserName
-			}
-		}(task)
-	}
-	wg.Wait()
-
-	umap := make(map[string]int)
 	names := []string{}
-	for _, t := range tasks {
-		if t.Err != nil {
-			return nil, t.Err
-		}
-		for _, n := range t.List {
-			umap[n] = umap[n] + 1
-			if umap[n] == len(tasks) {
-				names = append(names, n)
-			}
+	userIDs := map[string]string{} // ID -> username
+	for _, s := range v.User.Subscribers {
+		userIDs[s.ID] = s.UserName
+	}
+	for _, s := range v.Subscriptions {
+		if s.Name == "Posts" && userIDs[s.UserID] != "" {
+			names = append(names, userIDs[s.UserID])
+			delete(userIDs, s.UserID) // возможные дубликаты
 		}
 	}
-
 	sort.Strings(names)
 
 	return names, nil
