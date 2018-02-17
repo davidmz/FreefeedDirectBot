@@ -25,11 +25,13 @@ func main() {
 		botToken   string
 		apiHost    string
 		dbFileName string
+		userAgent  string
 	)
 
 	flag.StringVar(&botToken, "token", "", "telegram bot token")
 	flag.StringVar(&apiHost, "apihost", "freefeed.net", "backend API host")
 	flag.StringVar(&dbFileName, "dbfile", "", "database file name")
+	flag.StringVar(&userAgent, "ua", "", "User-Agent for backend requests")
 	flag.Parse()
 
 	if botToken == "" || dbFileName == "" {
@@ -59,11 +61,12 @@ func main() {
 	log.Println("Starting bot", bot.Self.UserName)
 
 	app := &App{
-		db:      db,
-		apiHost: apiHost,
-		outbox:  make(chan tgbotapi.Chattable, 0),
-		rts:     make(map[int]*Realtime),
-		cache:   gcache.New(1000).ARC().Build(),
+		db:        db,
+		apiHost:   apiHost,
+		userAgent: userAgent,
+		outbox:    make(chan tgbotapi.Chattable, 0),
+		rts:       make(map[int]*Realtime),
+		cache:     gcache.New(1000).ARC().Build(),
 	}
 
 	app.LoadRT()

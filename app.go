@@ -1,6 +1,10 @@
 package main
 
 import (
+	"encoding/json"
+	"io"
+	"log"
+	"net/http"
 	"regexp"
 	"sort"
 	"strings"
@@ -13,12 +17,13 @@ import (
 )
 
 type App struct {
-	db      *bolt.DB
-	apiHost string
-	outbox  chan tgbotapi.Chattable
-	rts     map[int]*Realtime
-	rtLk    sync.Mutex
-	cache   gcache.Cache
+	db        *bolt.DB
+	apiHost   string
+	userAgent string
+	outbox    chan tgbotapi.Chattable
+	rts       map[int]*Realtime
+	rtLk      sync.Mutex
+	cache     gcache.Cache
 }
 
 func (a *App) SendText(chatID int, text string) { a.outbox <- tgbotapi.NewMessage(chatID, text) }
@@ -27,7 +32,7 @@ func (a *App) testToken(token string) (*frf.User, error) {
 	user := &frf.User{AccessToken: strings.TrimSpace(token)}
 
 	v := new(frf.DirectChannelResponse)
-	err := user.SendRequest("GET", "https://"+a.apiHost+"/v2/timelines/filter/directs?offset=0", nil, v)
+	err := a.SendRequest(user, "GET", "/v2/timelines/filter/directs?offset=0", nil, v)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +63,7 @@ func (a *App) sendDirect(user *frf.User, addressees []string, text string) (stri
 	postBody.Post.Body = text
 	v := &frf.PostResponse{}
 
-	if err := user.SendRequest("POST", "https://"+a.apiHost+"/v1/posts", postBody, v); err != nil {
+	if err := a.SendRequest(user, "POST", "/v1/posts", postBody, v); err != nil {
 		return "", err
 	}
 	return v.Posts.ID, nil
@@ -74,7 +79,7 @@ type contactTask struct {
 
 func (a *App) getContacts(user *frf.User) ([]string, error) {
 	v := &frf.WhoAmIResponse{}
-	err := user.SendRequest("GET", "https://freefeed.net/v2/users/whoami", nil, v)
+	err := a.SendRequest(user, "GET", "/v2/users/whoami", nil, v)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +101,7 @@ func (a *App) getContacts(user *frf.User) ([]string, error) {
 
 func (a *App) getAllPosts(user *frf.User) ([]*frf.Post, error) {
 	v := &frf.DirectChannelResponse{}
-	err := user.SendRequest("GET", "https://"+a.apiHost+"/v2/timelines/filter/directs?offset=0", nil, v)
+	err := a.SendRequest(user, "GET", "/v2/timelines/filter/directs?offset=0", nil, v)
 	if err != nil {
 		return nil, err
 	}
@@ -120,9 +125,48 @@ func (a *App) getPost(user *frf.User, shortCode string) (*frf.Post, error) {
 
 func (a *App) getPostByID(user *frf.User, postID string) (*frf.Post, error) {
 	v := &frf.OnePostResponse{}
-	err := user.SendRequest("GET", "https://"+a.apiHost+"/v2/posts/"+postID, nil, v)
+	err := a.SendRequest(user, "GET", "/v2/posts/"+postID, nil, v)
 	if err != nil {
 		return nil, err
 	}
 	return v.GetPost(), nil
+}
+
+type requestSigner interface {
+	Sign(*http.Request) *http.Request
+}
+
+func (a *App) SendRequest(u requestSigner, method string, uri string, reqObj interface{}, respObj interface{}) error {
+	url := "https://" + a.apiHost + uri
+	var req *http.Request
+	if reqObj == nil {
+		req, _ = http.NewRequest(method, url, nil)
+	} else {
+		r, w := io.Pipe()
+		go func() { json.NewEncoder(w).Encode(reqObj); w.Close() }()
+		req, _ = http.NewRequest(method, url, r)
+		req.Header.Add("Content-Type", "application/json; charset=utf-8")
+	}
+	if a.userAgent != "" {
+		req.Header.Set("User-Agent", a.userAgent)
+	}
+	u.Sign(req)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		err := frf.ReadErrorResponse(resp)
+		log.Println("Error:", err, "while send", method, "request to", url)
+		return err
+	}
+
+	if respObj != nil {
+		return json.NewDecoder(resp.Body).Decode(respObj)
+	}
+
+	return nil
 }

@@ -156,7 +156,7 @@ func (a *App) HandleMessage(msg *tgbotapi.Message) {
 		req := new(frf.NewCommentRequest)
 		req.Comment.Body = msg.Text
 		req.Comment.PostID = state.PostID
-		err := state.User.SendRequest("POST", "https://"+a.apiHost+"/v1/comments", req, nil)
+		err := a.SendRequest(state.User, "POST", "/v1/comments", req, nil)
 		if err != nil {
 			a.SendText(state.UserID, "Что-то пошло не так: "+err.Error())
 		} else {
@@ -181,7 +181,7 @@ func (a *App) HandleMessage(msg *tgbotapi.Message) {
 			req := new(frf.NewCommentRequest)
 			req.Comment.Body = msg.Text
 			req.Comment.PostID = post.ID
-			err := state.User.SendRequest("POST", "https://"+a.apiHost+"/v1/comments", req, nil)
+			err := a.SendRequest(state.User, "POST", "/v1/comments", req, nil)
 			if err != nil {
 				a.SendText(state.UserID, "Что-то пошло не так: "+err.Error())
 			} else {
