@@ -11,6 +11,6 @@ type User struct {
 }
 
 func (u *User) Sign(r *http.Request) *http.Request {
-	r.Header.Add("X-Authentication-Token", u.AccessToken)
+	r.Header.Add("Authorization", "Bearer "+u.AccessToken)
 	return r
 }

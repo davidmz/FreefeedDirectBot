@@ -8,7 +8,7 @@ import (
 	"github.com/davidmz/FreefeedDirectBot/frf"
 )
 
-func (a *App) HandleRT(userID int, event string, jmsg json.RawMessage) {
+func (a *App) HandleRT(userID TgUserID, event string, jmsg json.RawMessage) {
 	state := a.LoadState(userID)
 	if !state.IsAuthorized() {
 		// нет авторизованного юзера
@@ -52,14 +52,14 @@ func (a *App) HandleRT(userID int, event string, jmsg json.RawMessage) {
 		}
 
 		a.SendText(userID,
-			"💬 " +authorName+" ответил на пост «"+post.ShortBody()+"»:\n"+
-			strings.Repeat("\u2500", 10)+"\n"+
-			v.Comment.Body+"\n"+
-			strings.Repeat("\u2500", 10)+"\n"+
-			"Ответить: /re_"+post.ID[:4]+" или ответить (Reply) на это сообщение\n"+
-			"Открыть: https://"+a.apiHost+"/"+post.Author+"/"+post.ID+"\n",
+			"💬 "+authorName+" ответил на пост «"+post.ShortBody()+"»:\n"+
+				strings.Repeat("\u2500", 10)+"\n"+
+				v.Comment.Body+"\n"+
+				strings.Repeat("\u2500", 10)+"\n"+
+				"Ответить: /re_"+post.ID[:4]+" или ответить (Reply) на это сообщение\n"+
+				"Открыть: https://"+a.apiHost+"/"+post.Author+"/"+post.ID+"\n",
 		)
-	
+
 	} else if event == `"post:new"` {
 		v := new(frf.OnePostResponse)
 		if err := json.Unmarshal(jmsg, v); err != nil {
@@ -67,20 +67,19 @@ func (a *App) HandleRT(userID int, event string, jmsg json.RawMessage) {
 			return
 		}
 
-		post:=v.GetPost()
+		post := v.GetPost()
 		if post.Author == state.User.Name {
 			// комментарий от нас
 			return
 		}
 
 		a.SendText(userID,
-			"📨 " +post.Author+" написал "+humanList(post.Addressees, state.User.Name, "вам")+":\n"+
-			strings.Repeat("\u2500", 10)+"\n"+
-			post.Body+"\n"+
-			strings.Repeat("\u2500", 10)+"\n"+
-			"Ответить: /re_"+post.ID[:4]+" или ответить (Reply) на это сообщение\n"+
-			"Открыть: https://"+a.apiHost+"/"+post.Author+"/"+post.ID+"\n",
+			"📨 "+post.Author+" написал "+humanList(post.Addressees, state.User.Name, "вам")+":\n"+
+				strings.Repeat("\u2500", 10)+"\n"+
+				post.Body+"\n"+
+				strings.Repeat("\u2500", 10)+"\n"+
+				"Ответить: /re_"+post.ID[:4]+" или ответить (Reply) на это сообщение\n"+
+				"Открыть: https://"+a.apiHost+"/"+post.Author+"/"+post.ID+"\n",
 		)
 	}
 }
-

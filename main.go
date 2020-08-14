@@ -9,7 +9,7 @@ import (
 	"github.com/bluele/gcache"
 	"github.com/boltdb/bolt"
 	"github.com/davidmz/mustbe"
-	"gopkg.in/telegram-bot-api.v1"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
 var (
@@ -65,7 +65,7 @@ func main() {
 		apiHost:   apiHost,
 		userAgent: userAgent,
 		outbox:    make(chan tgbotapi.Chattable, 0),
-		rts:       make(map[int]*Realtime),
+		rts:       make(map[TgUserID]*Realtime),
 		cache:     gcache.New(1000).ARC().Build(),
 	}
 
@@ -74,7 +74,7 @@ func main() {
 	for {
 		select {
 		case update := <-updates:
-			go app.HandleMessage(&update.Message)
+			go app.HandleMessage(update.Message)
 		case msg := <-app.outbox:
 			bot.Send(msg)
 		}

@@ -48,7 +48,7 @@ func (a *App) StopRT(s *State) {
 
 type Realtime struct {
 	App     *App
-	UserID  int
+	UserID  TgUserID
 	User    *frf.User
 	closeCh chan struct{}
 }

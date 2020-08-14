@@ -32,7 +32,7 @@ type State struct {
 }
 
 type stateBase struct {
-	UserID int
+	UserID TgUserID
 	Action Action
 	User   *frf.User
 }
@@ -45,11 +45,11 @@ func (s *State) Clone(act Action) *State {
 	return newState
 }
 
-func (a *App) LoadState(userID int) *State {
+func (a *App) LoadState(userID TgUserID) *State {
 	state := new(State)
 	state.UserID = userID
 	a.db.View(func(tx *bolt.Tx) error {
-		data := tx.Bucket(StatesBucket).Get([]byte(strconv.Itoa(userID)))
+		data := tx.Bucket(StatesBucket).Get([]byte(strconv.FormatInt(userID, 10)))
 		return json.Unmarshal(data, state)
 	})
 	return state
@@ -58,7 +58,7 @@ func (a *App) LoadState(userID int) *State {
 func (a *App) SaveState(state *State) {
 	a.db.Update(func(tx *bolt.Tx) error {
 		data, _ := json.Marshal(state)
-		tx.Bucket(StatesBucket).Put([]byte(strconv.Itoa(state.UserID)), data)
+		tx.Bucket(StatesBucket).Put([]byte(strconv.FormatInt(state.UserID, 10)), data)
 		return nil
 	})
 }

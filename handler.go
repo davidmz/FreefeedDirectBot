@@ -9,13 +9,13 @@ import (
 	"strings"
 
 	"github.com/davidmz/FreefeedDirectBot/frf"
-	"gopkg.in/telegram-bot-api.v1"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
 var reCmdRE = regexp.MustCompile(`/re_([a-f0-9]{4,})`)
 
 func (a *App) HandleMessage(msg *tgbotapi.Message) {
-	state := a.LoadState(msg.From.ID)
+	state := a.LoadState(TgUserID(msg.From.ID))
 	a.ResetState(state) // по умолчанию сбрасываем состояние
 
 	replyToShortCode := ""
@@ -27,17 +27,17 @@ func (a *App) HandleMessage(msg *tgbotapi.Message) {
 
 	switch cmd := msg.Command(); {
 
-	case cmd == "/cancel":
+	case cmd == "cancel":
 		if state.Action != ActNothing {
 			a.SendText(state.UserID, "OK, операция «"+state.ActionTitle()+"» отменена.")
 		} else {
 			a.SendText(state.UserID, "Сейчас нечего отменять. Используйте /help чтобы увидеть список команд.")
 		}
 
-	case cmd == "/help":
+	case cmd == "help":
 		a.SendText(state.UserID, HelpMessage)
 
-	case cmd == "/start":
+	case cmd == "start":
 		if !state.IsAuthorized() {
 			for _, m := range HelloMessages {
 				a.SendText(state.UserID, m)
@@ -70,7 +70,7 @@ func (a *App) HandleMessage(msg *tgbotapi.Message) {
 			a.StartRT(state)
 		}
 
-	case cmd == "/logout" && state.IsAuthorized():
+	case cmd == "logout" && state.IsAuthorized():
 		a.StopRT(state)
 		st := state.Clone(ActNothing)
 		st.User = nil
@@ -78,7 +78,7 @@ func (a *App) HandleMessage(msg *tgbotapi.Message) {
 		a.SendText(state.UserID, "Всё, я вас забыл и стёр все данные о вас. "+
 			"Если захотите вернуться, используйте команду /start")
 
-	case cmd == "/contacts" && state.IsAuthorized():
+	case cmd == "contacts" && state.IsAuthorized():
 		contacts, err := a.getContacts(state.User)
 		if err != nil {
 			a.SendText(state.UserID, "Что-то пошло не так: "+err.Error())
@@ -94,8 +94,8 @@ func (a *App) HandleMessage(msg *tgbotapi.Message) {
 			a.SendText(state.UserID, strings.Join(lines, "\n"))
 		}
 
-	case strings.HasPrefix(cmd, "/to_") && state.IsAuthorized():
-		name := strings.TrimPrefix(cmd, "/to_")
+	case strings.HasPrefix(cmd, "to_") && state.IsAuthorized():
+		name := strings.TrimPrefix(cmd, "to_")
 		if state.Action != ActComposePost {
 			state = state.Clone(ActComposePost)
 		}
@@ -132,8 +132,8 @@ func (a *App) HandleMessage(msg *tgbotapi.Message) {
 			a.outbox <- m
 		}
 
-	case strings.HasPrefix(cmd, "/re_") && state.IsAuthorized():
-		shortCode := strings.TrimPrefix(cmd, "/re_")
+	case strings.HasPrefix(cmd, "re_") && state.IsAuthorized():
+		shortCode := strings.TrimPrefix(cmd, "re_")
 		post, err := a.getPost(state.User, shortCode)
 		if err == ErrNotFound {
 			a.SendText(state.UserID, "Сообщение не найдено.")
@@ -193,7 +193,7 @@ func (a *App) HandleMessage(msg *tgbotapi.Message) {
 			}
 		}
 
-	case cmd == "/list" && state.IsAuthorized():
+	case cmd == "list" && state.IsAuthorized():
 		cnt, _ := strconv.Atoi(strings.TrimSpace(msg.CommandArguments()))
 		if cnt == 0 {
 			cnt = 5

@@ -13,7 +13,7 @@ import (
 	"github.com/bluele/gcache"
 	"github.com/boltdb/bolt"
 	"github.com/davidmz/FreefeedDirectBot/frf"
-	"gopkg.in/telegram-bot-api.v1"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
 type App struct {
@@ -21,12 +21,12 @@ type App struct {
 	apiHost   string
 	userAgent string
 	outbox    chan tgbotapi.Chattable
-	rts       map[int]*Realtime
+	rts       map[TgUserID]*Realtime
 	rtLk      sync.Mutex
 	cache     gcache.Cache
 }
 
-func (a *App) SendText(chatID int, text string) { a.outbox <- tgbotapi.NewMessage(chatID, text) }
+func (a *App) SendText(chatID TgUserID, text string) { a.outbox <- tgbotapi.NewMessage(chatID, text) }
 
 func (a *App) testToken(token string) (*frf.User, error) {
 	user := &frf.User{AccessToken: strings.TrimSpace(token)}
